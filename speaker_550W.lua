@@ -3334,7 +3334,8 @@ table.sort(midiEvents, function(a, b)
 end)
 
 -- 播放MIDI序列
-local function playMIDITime = 0
+local function playMIDI()
+    local lastTime = 0
     local startTime = os.clock()
     
     for _, event in ipairs(midiEvents) do
