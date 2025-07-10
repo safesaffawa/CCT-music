@@ -1,0 +1,152 @@
+-- CC: Tweaked 扬声器播放器
+-- 根据官方文档实现: https://tweaked.cc/peripheral/speaker.html#v:playNote
+--
+-- 注意: 
+-- 音高参数使用半音(semitone)作为单位
+-- 0, 12, 24 对应 F#
+-- 6, 18 对应 C
+
+-- 获取扬声器外设
+local speaker = peripheral.find("speaker")
+if not speaker then
+    print("未找到扬声器外设")
+    return
+end
+
+-- 可用乐器列表
+local instruments = {
+    "harp", "basedrum", "snare", "hat", "bass",
+    "flute", "bell", "guitar", "chime", "xylophone"
+}
+
+-- 音符到半音的映射表
+local noteToSemitone = {
+    -- 八度 0
+    ["F#0"] = 0, ["G0"] = 1, ["G#0"] = 2, ["A0"] = 3, ["A#0"] = 4, ["B0"] = 5,
+    
+    -- 八度 1
+    ["C1"] = 6, ["C#1"] = 7, ["D1"] = 8, ["D#1"] = 9, ["E1"] = 10, ["F1"] = 11, 
+    ["F#1"] = 12, ["G1"] = 13, ["G#1"] = 14, ["A1"] = 15, ["A#1"] = 16, ["B1"] = 17,
+    
+    -- 八度 2
+    ["C2"] = 18, ["C#2"] = 19, ["D2"] = 20, ["D#2"] = 21, ["E2"] = 22, ["F2"] = 23, 
+    ["F#2"] = 24, ["G2"] = 25, ["G#2"] = 26, ["A2"] = 27, ["A#2"] = 28, ["B2"] = 29,
+    
+    -- 八度 3
+    ["C3"] = 30, ["C#3"] = 31, ["D3"] = 32, ["D#3"] = 33, ["E3"] = 34, ["F3"] = 35, 
+    ["F#3"] = 36, ["G3"] = 37, ["G#3"] = 38, ["A3"] = 39, ["A#3"] = 40, ["B3"] = 41,
+    
+    -- 八度 4 (中央C)
+    ["C4"] = 42, ["C#4"] = 43, ["D4"] = 44, ["D#4"] = 45, ["E4"] = 46, ["F4"] = 47, 
+    ["F#4"] = 48, ["G4"] = 49, ["G#4"] = 50, ["A4"] = 51, ["A#4"] = 52, ["B4"] = 53,
+    
+    -- 八度 5
+    ["C5"] = 54, ["C#5"] = 55, ["D5"] = 56, ["D#5"] = 57, ["E5"] = 58, ["F5"] = 59, 
+    ["F#5"] = 60, ["G5"] = 61, ["G#5"] = 62, ["A5"] = 63, ["A#5"] = 64, ["B5"] = 65
+}
+
+-- 播放单个音符
+-- @param instrument string 乐器类型
+-- @param volume number 音量 (0.0 - 3.0)
+-- @param pitch number|string 音高 (半音值或音符字符串)
+local function playNote(instrument, volume, pitch)
+    -- 如果pitch是字符串，转换为半音值
+    if type(pitch) == "string" then
+        pitch = noteToSemitone[pitch]
+        if not pitch then
+            print("错误: 无效的音符 " .. pitch)
+            return false
+        end
+    end
+    
+    -- 验证参数
+    if not table.contains(instruments, instrument) then
+        print("错误: 无效的乐器 " .. instrument)
+        return false
+    end
+    
+    if volume < 0 or volume > 3.0 then
+        print("错误: 音量超出范围 (0.0-3.0)")
+        return false
+    end
+    
+    if pitch < 0 or pitch > 65 then
+        print("错误: 音高超出范围 (0-65)")
+        return false
+    end
+    
+    -- 播放音符
+    return speaker.playNote(instrument, volume, pitch)
+end
+
+-- 播放音符序列
+-- @param sequence table 音符序列 (每个元素是{乐器, 音量, 音高})
+-- @param delay number 音符之间的延迟(秒)
+local function playSequence(sequence, delay)
+    for _, note in ipairs(sequence) do
+        local instrument, volume, pitch = unpack(note)
+        if playNote(instrument, volume, pitch) then
+            sleep(delay or 0.5)
+        else
+            print("播放失败")
+            break
+        end
+    end
+end
+
+-- 停止所有声音
+local function stopAllSounds()
+    speaker.stop() -- 停止所有正在播放的声音
+end
+
+-- ===== 示例用法 =====
+
+-- 示例1: 播放单个音符
+print("播放单个音符...")
+playNote("harp", 1.0, 12)      -- 使用半音值 (F#1)
+playNote("bell", 1.5, "C4")    -- 使用音符名 (中央C)
+sleep(1)
+
+-- 示例2: 播放音阶
+print("播放音阶...")
+local scale = {
+    {"harp", 1.0, "C4"},
+    {"harp", 1.0, "D4"},
+    {"harp", 1.0, "E4"},
+    {"harp", 1.0, "F4"},
+    {"harp", 1.0, "G4"},
+    {"harp", 1.0, "A4"},
+    {"harp", 1.0, "B4"},
+    {"harp", 1.0, "C5"}
+}
+playSequence(scale, 0.3)
+sleep(1)
+
+-- 示例3: 播放铃声
+print("播放铃声...")
+local jingle = {
+    {"bell", 1.5, "E4"},
+    {"bell", 1.5, "E4"},
+    {"bell", 1.5, "E4"},
+    {"bell", 1.5, "C4"},
+    {"bell", 1.5, "E4"},
+    {"bell", 1.5, "G4"},
+    {"bell", 2.0, "G3"}
+}
+playSequence(jingle, 0.4)
+sleep(1)
+
+-- 示例4: 播放鼓点节奏
+print("播放鼓点...")
+local drumBeat = {
+    {"basedrum", 2.0, 0},  -- F#0
+    {"snare", 1.5, 0},     -- F#0
+    {"hat", 1.0, 0},       -- F#0
+    {"basedrum", 2.0, 0},  -- F#0
+    {"hat", 1.0, 0},       -- F#0
+    {"snare", 1.5, 0},     -- F#0
+    {"hat", 1.0, 0},       -- F#0
+}
+playSequence(drumBeat, 0.2)
+
+print("播放完成")
